@@ -1,68 +1,75 @@
 <?php
 namespace Core;
 
-use \R;
+use Core\Facades\DataSource\DataSource;
 use RedBeanPHP\OODBBean;
+
+/**
+ * @method static array getAll()
+ * @method static Model|null findBy(array $query)
+ * @method static Model|null find(int $id)
+*/
 
 class Model
 {
     public static string $tableName;
-    private static OODBBean $bean;
-    private static mixed $result = null;
+    protected ?OODBBean $bean;
 
-    public function __construct()
+    public static function __callStatic(string $name, array $arguments)
     {
-        static::$bean = R::dispense(static::$tableName);
+        return DataSource::$name(static::class, ...$arguments);
     }
 
     public function __set(string $name, $value): void
     {
-        static::$bean->$name = $value;
-    }
-
-    public function save()
-    {
-        return R::store(static::$bean);
+        $this->$name = $value;
     }
 
     public function __get(string $name)
     {
-        return static::$bean->$name;
+        return $this->$name ?? null;
     }
 
-    public static function __callStatic($pluginName, $params)
+    public function delete(): bool
     {
-        if ($pluginName != 'trash') {
-            array_unshift($params, static::$tableName);
-        }
-        $instance = new static();
-        $result = R::$pluginName(...$params);
-        if ($result instanceof OODBBean) {
-            static::$bean = $result;
-        } else {
-            static::$result = $result;
-        }
-        return $instance;
+        return DataSource::delete($this);
     }
 
-    public function getResult()
+
+    public function setBean(OODBBean $bean)
     {
-        return static::$bean->id != 0 ? static::$bean : static::$result;
+        $this->bean = $bean;
     }
+
+    public function getBean(): ?OODBBean
+    {
+        return $this->bean ?? null;
+    }
+
 
     public function fill(array $properties)
     {
-        foreach (static::$fillable as $item => $rules) {
+        foreach ($this->fillable as $item => $rules) {
             if (in_array('required', $rules)) {
-                if (!static::$bean->$item) {
+                if (!$this->$item) {
                     if (!array_key_exists($item, $properties) || !$properties[$item]) {
                         die('required');
                     }
                 }
             }
             if (array_key_exists($item, $properties)) {
-                static::$bean->$item = $properties[$item];
+                $this->$item = $properties[$item];
             }
         }
+    }
+
+    public function save(): Model
+    {
+        return DataSource::save($this);
+    }
+
+    public function getProperties()
+    {
+        return get_object_vars($this);
     }
 }

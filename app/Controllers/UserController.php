@@ -4,18 +4,16 @@ namespace App\Controllers;
 use App\Models\User;
 use Core\Controller;
 use Core\Request;
+use JetBrains\PhpStorm\ArrayShape;
 
 class  UserController extends Controller
 {
-    public function get(Request $request, int $id)
-    {
-        return ['asd'];
-    }
-
-    public function create(Request $request)
+    public function create(Request $request): array
     {
         // Todo we should make validation
-        $user = User::findOne("email = ?", [$request->email])->getResult();
+        $user = User::findBy([
+            'email' => $request->email
+        ]);
 
         if ($user) {
             return [
@@ -33,23 +31,24 @@ class  UserController extends Controller
 
         return [
             'data' => [
-                'message' => 'User created successfully'
+                'message' => 'User created successfully',
+                'user' => $user
             ]
         ];
     }
 
-    public function all()
+    #[ArrayShape(['data' => "array"])] public function all(): array
     {
         return [
-            'data' => User::find()->getResult()
+            'data' => User::getAll()
         ];
     }
 
 
-    public function find(int $id)
+    public function find(string $id): array
     {
-        $user = User::load($id);
-        if ($user->id === 0) {
+        $user = User::find($id);
+        if (!$user) {
             return [
                 'status' => 404,
                 'data' => [
@@ -58,14 +57,14 @@ class  UserController extends Controller
             ];
         }
         return [
-            'data' => $user->getResult()
+            'data' => $user
         ];
     }
 
-    public function delete(int $id)
+    public function delete(string $id): array
     {
-        $user = User::load($id);
-        if ($user->id === 0) {
+        $user = User::find($id);
+        if (!$user) {
             return [
                 'status' => 404,
                 'data' => [
@@ -74,7 +73,7 @@ class  UserController extends Controller
             ];
         }
 
-        User::trash($user->getResult());
+        $user->delete();
 
         return [
             'data' => [
@@ -84,9 +83,12 @@ class  UserController extends Controller
     }
 
 
-    public function edit(Request $request, int $id)
+    public function edit(Request $request, string $id): array
     {
-        $newMailUser = User::findOne("email = ?", [$request->email])->getResult();
+        $newMailUser = User::findBy([
+            'email' => $request->email
+        ]);
+
         if ($newMailUser) {
             return [
                 'status' => 400,
@@ -96,9 +98,9 @@ class  UserController extends Controller
             ];
         }
 
-        $user = User::load($id);
+        $user = User::find($id);
 
-        if ($user->getResult()->id === 0) {
+        if (!$user) {
             return [
                 'status' => 404,
                 'data' => [

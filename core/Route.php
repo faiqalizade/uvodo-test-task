@@ -48,7 +48,7 @@ class Route
         $queryParams = [];
         foreach ($pathList as $path) {
             if (preg_match("/:[A-Z0-9a-z]+/", $path)) {
-                $pattern = preg_replace("/:[A-Z0-9a-z]+/", "[A-Z0-9a-z]+", $path);
+                $pattern = preg_replace("/:[A-Z0-9a-z]+/", "[\S\s]+", $path);
                 $pattern = str_replace("/", "\/", $pattern);
                 $pattern = "/^$pattern$/";
                 if (preg_match($pattern, Request::$instance->route())) {

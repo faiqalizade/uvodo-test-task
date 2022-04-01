@@ -1,7 +1,7 @@
 <?php
 namespace App;
 
-use Core\Database;
+use Core\Facades\DataSource;
 use Core\Request;
 use Core\Route;
 
@@ -11,12 +11,13 @@ use Core\Route;
  */
 class Application
 {
-    public array $config;
+    public static array $config;
     public function __construct()
     {
         Route::prefix('/api')->path("api.php");
-        $this->config = require_once realpath("config/app.php");
-//        Route::prefix('/api')->path("web.php");
+        self::$config = require_once realpath("config/app.php");
+
+        DataSource\Source::setApplication($this);
     }
 
     /**
@@ -31,7 +32,6 @@ class Application
 
     public function run()
     {
-        $this->connectDB();
         $route = Route::verify(Request::$instance->route(), Request::$instance->method);
         if (!$route) {
             die('404');
@@ -72,12 +72,5 @@ class Application
         }
 
         return $args;
-    }
-
-    private function connectDB()
-    {
-        $db = Database::$instance;
-        $config = $this->config['db'];
-        $db->connect(...$config);
     }
 }
